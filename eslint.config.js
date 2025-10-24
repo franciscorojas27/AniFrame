@@ -1,18 +1,40 @@
 export default defineConfig([
     js.configs.recommended,
     {
-        files: ["**/*.ts"],
+        files: ["**/*.ts", "**/*.tsx"],
         plugins: {
-            // Se define un alias para el plugin
             '@typescript-eslint': tsPlugin, 
         },
-        // Usas 'extends' para referenciar la configuración del plugin por su alias
         extends: [
-            // El formato es '<alias-del-plugin>/<nombre-de-la-config>'
-            '/node_modules/standard/eslintrc.json', 
+            'standard',
+            'plugin:@typescript-eslint/recommended',
+            'plugin:@typescript-eslint/recommended-requiring-type-checking'
         ],
         languageOptions: {
-            sourceType: "module",
+            parser: '@typescript-eslint/parser',
+            parserOptions: {
+                project: './tsconfig.json',
+                tsconfigRootDir: process.cwd(),
+                ecmaVersion: 2020,
+                sourceType: "module",
+            },
+            globals: {
+                Atomics: 'readonly',
+                SharedArrayBuffer: 'readonly',
+            }
+        },
+        rules: {
+            // sensible TypeScript rule adjustments
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+            '@typescript-eslint/explicit-module-boundary-types': 'off',
+            '@typescript-eslint/no-explicit-any': 'warn',
+            'no-undef': 'off'
+        },
+        env: {
+            browser: true,
+            node: true,
+            es2021: true,
         }
     }
 ]);

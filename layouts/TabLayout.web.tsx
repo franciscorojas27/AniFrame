@@ -1,164 +1,117 @@
-import { Tabs } from 'expo-router';
-import React, { useState } from 'react';
-import { Platform, Text, Pressable, StyleSheet } from 'react-native';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { useTextStyles } from '@/hooks/useTextStyles';
+// app/(tabs)/_layout.tsx
+import React from 'react'
+import { Tabs, TabList, TabTrigger, TabSlot } from 'expo-router/ui'
+import { View, Text, StyleSheet, Platform } from 'react-native'
 
-/**
- * This layout is required for the web platform.
- */
-export default function TabLayout() {
-  const [focusedTab, setFocusedTab] = useState<string | null>(null);
-  const textStyles = useTextStyles();
-  const tabBarButton = (props: any) => {
-    const style: any = props.style ?? {};
-    return (
-      <Pressable
-        {...props}
-        onFocus={() => { setFocusedTab(props.accessibilityLargeContentTitle); }}
-        onBlur={() => { setFocusedTab(null); }}
-        style={({ pressed, focused }) => [
-          style,
-          {
-            backgroundColor:
-              props["aria-selected"] ? '#000000ff' : (focused ? '#ffffffff' : '#000000'),
-          },
-        ]}
-      />
-    );
-  };
+const TABS = [
+  { name: 'index', label: 'Home', href: '/(tabs)/' as const },
+  { name: 'explore', label: 'Explore', href: '/(tabs)/explore' as const },
+  {
+    name: 'activity_history',
+    label: 'Activity',
+    href: '/(tabs)/activity_history' as const,
+  },
+]
 
+export default function Layout() {
   return (
-    <Tabs
-      screenOptions={{
-        freezeOnBlur: true,           // ⚡ bloquea interacción sin desmontar
-        lazy: true,                   // carga solo cuando se enfoca
-        headerShown: false,
-        tabBarActiveTintColor: '#ff0000ff',
-        tabBarActiveBackgroundColor: '#000000ff',
-        tabBarBackground() {
-          return (
-            <Text
-              style={{
-                ...StyleSheet.absoluteFillObject,
-                backgroundColor: '#000000ff',
-              }}
-            />
-          );
-        },
-        animation: 'shift',
-        tabBarItemStyle: {
-          backgroundColor: '#fff1f1ff',
-        },
-        tabBarStyle: {
-          width: '100%',
-        },
-        tabBarPosition: 'top',
-        tabBarIconStyle: {
-          height: textStyles.title.lineHeight,
-          width: 0,
-        },
-        tabBarIcon({ focused, color, size }) {
-          return true;
-        }
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarButton,
-          tabBarLabel: ({ children, focused, color, position }) => {
-            const labelColor = focused
-              ? color
-              : focusedTab === children
-                ? '#000000ff'
-                : '#ffffff';
-
-            return (
-              <Text style={{ ...textStyles.default, color: labelColor }}>
-                {children}
+    <Tabs>
+      {/* Barra de tabs */}
+      <TabList style={styles.tabList}>
+        {TABS.map((t) => (
+          <TabTrigger
+            key={t.name}
+            name={t.name}
+            href={t.href}
+            style={({ focused, hovered }) => [
+              styles.tabButton,
+              focused && styles.tabButtonFocused,
+              !focused && styles.tabButtonFlanco,
+              hovered && styles.tabButtonHover,
+            ]}
+            accessibilityLabel={t.label}
+          >
+            {({ focused, hovered }) => (
+              <Text
+                style={[
+                  styles.tabLabel,
+                  focused ? styles.tabLabelFocused : styles.tabLabelFlanco,
+                  hovered && !focused ? styles.tabLabelHover : undefined,
+                ]}
+              >
+                {t.label}
               </Text>
-            );
-          },
-          tabBarLabelStyle: textStyles.default,
-          tabBarIcon: ({ color, size }: any) => null,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarButton,
-          tabBarLabel: ({ children, focused, color, position }) => {
-            const labelColor = focused
-              ? color
-              : focusedTab === children
-                ? '#000000ff'
-                : '#ffffff';
+            )}
+          </TabTrigger>
+        ))}
+      </TabList>
 
-            return (
-              <Text style={{ ...textStyles.default, color: labelColor }}>
-                {children}
-              </Text>
-            );
-          },
-          tabBarLabelStyle: textStyles.default,
-          tabBarIcon: () => null,
-        }}
-      />
-      <Tabs.Screen
-        name="tv_focus"
-        options={
-          Platform.OS === 'web'
-            ? {
-              href: null,
-            }
-            : {
-              title: 'TV demo',
-              tabBarButton,
-              tabBarLabel: ({ children, focused, color, position }) => {
-                const labelColor = focused
-                  ? color
-                  : focusedTab === children
-                    ? '#000000ff'
-                    : '#ffffff';
-
-                return (
-                  <Text style={{ ...textStyles.default, color: labelColor }}>
-                    {children}
-                  </Text>
-                );
-              },
-              tabBarLabelStyle: styles.default,
-              tabBarIcon: () => null,
-            }
-        }
-      />
+      {/* Slot para pantalla activa */}
+      <View style={styles.slotWrap}>
+        <TabSlot />
+      </View>
     </Tabs>
-  );
+  )
 }
 
-
 const styles = StyleSheet.create({
-  default: {
-    fontFamily: 'System',
-    fontSize: 16,
+  slotWrap: {
+    flex: 1,
+    backgroundColor: '#060270', 
   },
-  tab: {
-    padding: 10,
-    backgroundColor: 'black',
-    borderRadius: 5,
+  tabList: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-evenly',
+    height: 90,
+    paddingHorizontal: 16,
+    backgroundColor: '#0b0b0f', 
+    borderTopWidth: 1,
+    borderTopColor: '#222',
   },
-  tabFocused: {
-    backgroundColor: 'white',
+  tabButton: {
+    width: 250, 
+    height: 55, 
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    transitionProperty: Platform.OS === 'web' ? 'all' : undefined,
+    transitionDuration: Platform.OS === 'web' ? '150ms' : undefined,
   },
-  text: {
-    color: 'white',
-    fontWeight: 'bold',
+  tabButtonFocused: {
+    backgroundColor: '#ffffff',
+    transform: [{ scale: 1.1 }],
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
-  textFocused: {
-    color: 'black',
+  tabButtonFlanco: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#444',
+  },
+  tabButtonHover: {
+    backgroundColor: '#1c1c28',
+    transform: [{ scale: 1.05 }],
+  },
+  tabLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    transitionProperty: Platform.OS === 'web' ? 'color' : undefined,
+    transitionDuration: Platform.OS === 'web' ? '150ms' : undefined,
+  },
+  tabLabelFocused: {
+    color: '#060270', 
+    fontWeight: '700',
+  },
+  tabLabelFlanco: {
+    color: '#ccc',
+    fontWeight: '500',
+  },
+  tabLabelHover: {
+    color: '#ffffff', // texto en hover
   },
 })
