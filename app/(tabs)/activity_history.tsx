@@ -83,7 +83,7 @@ export default function ActivityHistoryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#2F2D2D',
+        backgroundColor: 'black',
         paddingVertical: 8,
     },
 
