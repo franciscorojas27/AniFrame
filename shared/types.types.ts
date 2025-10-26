@@ -5,3 +5,10 @@ export type Anime = {
     slug: string;
     urlImg: string;
 };
+
+export type FavoriteItem = {
+    id: number;
+    name: string;
+    slug: string;
+    imgUrl: string;
+};

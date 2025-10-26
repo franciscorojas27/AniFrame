@@ -3,32 +3,17 @@ import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { FlashList } from '@shopify/flash-list';
-import { Link, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Switch,
-    Alert,
-    Pressable,
-} from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { View, Text, StyleSheet, Switch, Alert, Pressable } from 'react-native';
 import { useAppConfig } from '@/contexts/AppConfigContext';
-
-type FavoriteItem = {
-    id: number;
-    name: string;
-    slug: string;
-    imgUrl: string;
-};
+import RenderItem from '@/components/RenderItem';
+import { FavoriteItem } from '@/shared/types.types';
+import RenderItemDelete from '@/components/RenderItemDelete';
 
 export default function FavoriteScreen() {
     const { data, loading, error, refetch } =
         useFetch<FavoriteItem[]>(`/favorite`);
-    console.log(data);
 
     const [modoEliminar, setModoEliminar] = useState(false);
     const { apiBaseUrl } = useAppConfig();
@@ -59,46 +44,15 @@ export default function FavoriteScreen() {
     const Element = ({ item }: { item: FavoriteItem }) => {
         if (modoEliminar) {
             return (
-                <TouchableOpacity
-                    activeOpacity={0.7}
-                    style={styles.element}
-                    onPress={() => handleDelete(item.id)}>
-                    <Image
-                        style={styles.itemImg}
-                        source={{ uri: item.imgUrl }}
-                    />
-                    <View style={styles.deleteOverlay}>
-                        <MaterialIcons
-                            name='delete-forever'
-                            size={24}
-                            color='white'
-                        />
-                    </View>
-                    <Text numberOfLines={1} style={styles.text}>
-                        {item.name}
-                    </Text>
-                </TouchableOpacity>
+                <RenderItemDelete
+                    item={item}
+                    handleDelete={handleDelete}
+                    opacity={0.7}
+                />
             );
         }
 
-        return (
-            <Link
-                href={{
-                    pathname: '/video/[slug]/details',
-                    params: { slug: item.slug },
-                }}
-                asChild>
-                <TouchableOpacity activeOpacity={0.6} style={styles.element}>
-                    <Image
-                        style={styles.itemImg}
-                        source={{ uri: item.imgUrl }}
-                    />
-                    <Text numberOfLines={1} style={styles.text}>
-                        {item.name}
-                    </Text>
-                </TouchableOpacity>
-            </Link>
-        );
+        return <RenderItem item={item} />;
     };
 
     return (
@@ -163,37 +117,5 @@ const styles = StyleSheet.create({
         marginTop: 4,
         textAlign: 'center',
         width: '100%',
-    },
-    itemImg: {
-        width: '100%',
-        height: 190,
-        aspectRatio: 1.5,
-        borderRadius: 8,
-        marginBottom: 4,
-    },
-    element: {
-        flex: 1,
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        margin: 6,
-        paddingBottom: 4,
-        borderRadius: 8,
-        backgroundColor: '#202022',
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 3,
-        position: 'relative',
-    },
-    deleteOverlay: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: 'rgba(255, 59, 48, 0.8)',
-        borderRadius: 50,
-        padding: 5,
     },
 });

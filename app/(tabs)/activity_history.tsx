@@ -19,7 +19,6 @@ type HistoryItem = {
 export default function ActivityHistoryScreen() {
     const { data, loading, error, refetch } =
         useFetch<HistoryItem[]>('/history');
-    console.log(data);
 
     useEventListener(evt, 'refreshHistory', () => {
         refetch();

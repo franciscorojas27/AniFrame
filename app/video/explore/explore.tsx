@@ -1,21 +1,16 @@
 import {
-    Image,
     View,
     StyleSheet,
-    TouchableOpacity,
-    TextInput,
     Text,
     ActivityIndicator,
-    Platform,
-    Dimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useState, useCallback } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { Anime } from '@/shared/types.types';
 import { useAppConfig } from '@/contexts/AppConfigContext';
+import SearchBar from '@/components/SideSearch';
+import RenderItem from '@/components/RenderItem';
 
 export default function ExploreScreen() {
     const [animeCatalogList, setAnimeCatalogList] = useState<{
@@ -89,103 +84,33 @@ export default function ExploreScreen() {
         setActualPage(1);
         fetchData(1);
     }, [querySearch]);
-    const renderItem = ({ item }: { item: Anime }) => {
-        return (
-            <Link
-                href={{
-                    pathname: '/video/[slug]/details',
-                    params: {
-                        slug: item.slug,
-                    },
-                }}
-                style={[styles.card]}
-                asChild>
-                <TouchableOpacity activeOpacity={0.4}>
-                    {/* Poster */}
-                    <Image
-                        source={{ uri: item.urlImg }}
-                        style={styles.posterImage}
-                    />
-
-                    {/* Title */}
-                    <View style={[styles.titleContainer]}>
-                        <Text style={[styles.itemText]} ellipsizeMode='tail'>
-                            {item.name}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-            </Link>
-        );
-    };
 
     return (
         <View style={styles.container}>
             {/* Header búsqueda */}
-            <View
-                style={[
-                    styles.header,
-                    {
-                        paddingHorizontal: THEME.spacing,
-                        paddingTop: THEME.spacing,
-                    },
-                ]}>
-                <View
-                    style={[
-                        styles.searchContainer,
-                        {
-                            borderColor: THEME.colors.border,
-                            backgroundColor: '#121214',
-                            borderRadius: THEME.radius,
-                        },
-                    ]}>
-                    <Text style={{ color: THEME.colors.muted, marginRight: 8 }}>
-                        🔍
-                    </Text>
-                    <TextInput
-                        placeholder='Search anime...'
-                        placeholderTextColor={THEME.colors.muted}
-                        value={querySearch}
-                        onChangeText={setQuerySearch}
-                        onSubmitEditing={() => {
-                            setAnimeCatalogList({
-                                results: [],
-                                numberPages: 0,
-                            });
-                            setActualPage(1);
-                            fetchData(1);
-                        }}
-                        style={[
-                            styles.searchInput,
-                            { color: THEME.colors.text },
-                        ]}
-                        returnKeyType='search'
-                    />
-                    <TouchableOpacity
-                        onPress={() => {
-                            setAnimeCatalogList({
-                                results: [],
-                                numberPages: 0,
-                            });
-                            setActualPage(1);
-                            fetchData(1);
-                        }}
-                        style={[
-                            styles.searchButton,
-                            {
-                                backgroundColor: THEME.colors.primary,
-                                borderRadius: THEME.radius - 2,
-                            },
-                        ]}>
-                        <Text style={styles.searchButtonText}>Search</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            <SearchBar
+                querySearch={querySearch}
+                setQuerySearch={setQuerySearch}
+                onSearch={() => {
+                    setAnimeCatalogList({ results: [], numberPages: 0 });
+                    setActualPage(1);
+                    fetchData(1);
+                }}
+            />
 
             {/* Lista de animes */}
             <FlashList
                 data={animeCatalogList.results}
                 keyExtractor={item => item.id.toString()}
-                renderItem={renderItem}
+                renderItem={({ item }) => (
+                    <RenderItem
+                        item={{
+                            imgUrl: item.urlImg,
+                            name: item.name,
+                            slug: item.slug,
+                        }}
+                    />
+                )}
                 directionalLockEnabled={true}
                 numColumns={useNumColumns()}
                 showsVerticalScrollIndicator={false}
@@ -219,8 +144,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         width: '100%',
+        flexDirection: 'row',
     },
-    header: {},
+    sideSearch: {
+        width: 300,
+        backgroundColor: 'white',
+    },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
