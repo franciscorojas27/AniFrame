@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { Anime } from '@/shared/types.types';
+import { useAppConfig } from '@/contexts/AppConfigContext';
 
 export default function ExploreScreen() {
     const [animeCatalogList, setAnimeCatalogList] = useState<{
@@ -24,7 +25,7 @@ export default function ExploreScreen() {
     const [actualPage, setActualPage] = useState(1);
     const [querySearch, setQuerySearch] = useState('');
     const [loading, setLoading] = useState(false);
-
+    const { apiBaseUrl } = useAppConfig();
     const THEME = {
         colors: {
             background: '#0B0B0F',
@@ -52,7 +53,7 @@ export default function ExploreScreen() {
             setLoading(true);
             try {
                 const response = await fetch(
-                    `http://172.16.0.7:3000/anime/search?querySearch=${encodeURIComponent(querySearch)}&page=${nextPage}`
+                    `${apiBaseUrl}/anime/search?querySearch=${encodeURIComponent(querySearch)}&page=${nextPage}`
                 );
                 const dataNew: {
                     results: Anime[];
@@ -118,7 +119,7 @@ export default function ExploreScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container]}>
+        <View style={styles.container}>
             {/* Header búsqueda */}
             <View
                 style={[
@@ -210,13 +211,14 @@ export default function ExploreScreen() {
                     ) : null
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        width: '100%',
     },
     header: {},
     searchContainer: {

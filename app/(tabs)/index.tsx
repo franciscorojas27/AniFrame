@@ -2,11 +2,9 @@ import {
     Text,
     Image,
     View,
-    ActivityIndicator,
     Platform,
     TouchableOpacity,
     StyleSheet,
-    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
@@ -14,12 +12,16 @@ import { FlashList } from '@shopify/flash-list';
 import { useFetch } from '@/hooks/useFetch';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { Anime } from '@/shared/types.types';
+import ErrorMessage from '@/components/ErrorMessage';
+import Loading from '@/components/Loading';
 
 export default function HomeScreen() {
-    const { data: animeList, loading } = useFetch<Anime[]>(
-        'http://172.16.0.7:3000/anime/home'
-    );
-
+    const {
+        data: animeList,
+        loading,
+        error,
+        refetch,
+    } = useFetch<Anime[]>('/anime/home');
     const renderItem = ({ item }: { item: Anime }) => {
         return (
             <Link
@@ -46,23 +48,18 @@ export default function HomeScreen() {
             </Link>
         );
     };
+    if (loading) return <Loading size={64} color='blue' />;
+    if (error) return <ErrorMessage reloadMethod={refetch} />;
 
     return (
         <SafeAreaView style={styles.container}>
-            {!loading ? (
-                <FlashList
-                    style={styles.flatlistContainer}
-                    data={animeList ?? []}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id.toString()}
-                    numColumns={useNumColumns()}
-                    contentContainerStyle={styles.flatListContent}
-                />
-            ) : (
-                <View style={styles.placeholder}>
-                    <ActivityIndicator size='large' color='#0000ff' />
-                </View>
-            )}
+            <FlashList
+                style={styles.flatlistContainer}
+                data={animeList ?? []}
+                renderItem={renderItem}
+                keyExtractor={item => item.id.toString()}
+                numColumns={useNumColumns()}
+            />
         </SafeAreaView>
     );
 }
@@ -90,7 +87,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    flatListContent: {},
     itemContainer: {
         flex: 1,
         margin: 4,

@@ -1,34 +1,30 @@
+import ErrorMessage from '@/components/ErrorMessage';
+import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { evt } from '@/hooks/useSendVideoProgressOnExit';
 import { FlashList } from '@shopify/flash-list';
 import { useEventListener } from 'expo';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import {
-    View,
-    Image,
-    Text,
-    ActivityIndicator,
-    TouchableOpacity,
-    StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Image, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+type HistoryItem = {
+    anime_id: number;
+    name: string;
+    slug: string;
+    img_url: string;
+    last_episode: number;
+};
 
 export default function ActivityHistoryScreen() {
-    const { data, loading, error, refetch } = useFetch<
-        {
-            anime_id: number;
-            name: string;
-            slug: string;
-            img_url: string;
-            cap_number: number;
-        }[]
-    >('http://172.16.0.7:3000/history');
+    const { data, loading, error, refetch } =
+        useFetch<HistoryItem[]>('/history');
+    console.log(data);
 
     useEventListener(evt, 'refreshHistory', () => {
         refetch();
     });
-    function renderItem({ item }: { item: any }) {
+    function renderItem({ item }: { item: HistoryItem }) {
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -37,7 +33,7 @@ export default function ActivityHistoryScreen() {
                         params: {
                             slug: item.slug,
                             id: item.anime_id || ' ',
-                            cap: item.cap_number,
+                            cap: item.last_episode,
                             name: item.name,
                             urlImg: item.img_url,
                         },
@@ -51,7 +47,7 @@ export default function ActivityHistoryScreen() {
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>{item.name}</Text>
                     <Text style={styles.subtitle}>
-                        Capítulo {item.cap_number}
+                        Capítulo {item.last_episode}
                     </Text>
                 </View>
             </TouchableOpacity>
@@ -62,28 +58,27 @@ export default function ActivityHistoryScreen() {
             refetch();
         }, [])
     );
+
+    if (loading) return <Loading size={64} color='blue' />;
+    if (error) return <ErrorMessage reloadMethod={refetch} />;
+
     return (
-        <SafeAreaView style={styles.container}>
-            {!loading ? (
-                <FlashList
-                    data={data}
-                    keyExtractor={item => item.anime_id.toString()}
-                    initialScrollIndex={0}
-                    persistentScrollbar={false}
-                    directionalLockEnabled={true}
-                    renderItem={renderItem}
-                />
-            ) : (
-                <ActivityIndicator size='large' color='#ffffff' />
-            )}
-        </SafeAreaView>
+        <View style={styles.container}>
+            <FlashList
+                data={data}
+                keyExtractor={item => item.anime_id.toString()}
+                initialScrollIndex={0}
+                persistentScrollbar={false}
+                directionalLockEnabled={true}
+                renderItem={renderItem}
+            />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'black',
         paddingVertical: 8,
     },
 

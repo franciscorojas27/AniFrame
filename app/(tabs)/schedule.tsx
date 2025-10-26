@@ -1,3 +1,5 @@
+import ErrorMessage from '@/components/ErrorMessage';
+import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { useTvRowFocus } from '@/hooks/useTvRowFocus';
 import { FlashList } from '@shopify/flash-list';
@@ -8,7 +10,6 @@ import {
     Text,
     View,
     Image,
-    ActivityIndicator,
     TouchableOpacity,
     TVTextScrollView,
 } from 'react-native';
@@ -35,9 +36,8 @@ type ScheduleData = Record<
 >;
 
 export default function ScheduleScreen() {
-    const { data, loading } = useFetch<ScheduleData>(
-        'http://172.16.0.7:3000/anime/schedule'
-    );
+    const { data, loading, error, refetch } =
+        useFetch<ScheduleData>('/anime/schedule');
 
     const dayOrder: Array<keyof ScheduleData> = [
         'lunes',
@@ -50,14 +50,6 @@ export default function ScheduleScreen() {
     ];
 
     const rowRefs = React.useRef<Array<Array<React.RefObject<any>>>>([]);
-
-    if (loading) {
-        return (
-            <View style={styles.loaderContainer}>
-                <ActivityIndicator size='large' color='#fff' />
-            </View>
-        );
-    }
 
     const days = (data ? dayOrder.filter(d => (data as any)[d]) : []) as Array<
         keyof ScheduleData
@@ -105,6 +97,8 @@ export default function ScheduleScreen() {
             </Link>
         );
     };
+    if (loading) return <Loading size={64} color='blue' />;
+    if (error) return <ErrorMessage reloadMethod={refetch} />;
 
     return (
         <TVTextScrollView
@@ -114,37 +108,35 @@ export default function ScheduleScreen() {
                 paddingBottom: 40,
                 paddingTop: 20,
             }}>
-            {data &&
-                days.map((dayKey, rowIndex) => {
-                    const items = (data as any)[dayKey] as ScheduleItem[];
-                    if (!rowRefs.current[rowIndex]) {
-                        rowRefs.current[rowIndex] = [];
-                    }
-                    return (
-                        <View key={dayKey} style={styles.dayBlock}>
-                            <Text style={styles.dayTitle}>
-                                {dayKey.charAt(0).toUpperCase() +
-                                    dayKey.slice(1)}
-                            </Text>
+            {days.map((dayKey, rowIndex) => {
+                const items = (data as any)[dayKey] as ScheduleItem[];
+                if (!rowRefs.current[rowIndex]) {
+                    rowRefs.current[rowIndex] = [];
+                }
+                return (
+                    <View key={dayKey} style={styles.dayBlock}>
+                        <Text style={styles.dayTitle}>
+                            {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}
+                        </Text>
 
-                            <FlashList
-                                data={items}
-                                keyExtractor={item => item.id.toString()}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                renderItem={({ item, index }) => (
-                                    <DayItem
-                                        item={item}
-                                        index={index}
-                                        rowIndex={rowIndex}
-                                        itemsLen={items.length}
-                                        daysLen={days.length}
-                                    />
-                                )}
-                            />
-                        </View>
-                    );
-                })}
+                        <FlashList
+                            data={items}
+                            keyExtractor={item => item.id.toString()}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            renderItem={({ item, index }) => (
+                                <DayItem
+                                    item={item}
+                                    index={index}
+                                    rowIndex={rowIndex}
+                                    itemsLen={items.length}
+                                    daysLen={days.length}
+                                />
+                            )}
+                        />
+                    </View>
+                );
+            })}
         </TVTextScrollView>
     );
 }

@@ -13,6 +13,7 @@ import {
 } from 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AppConfigProvider } from '@/contexts/AppConfigContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,24 +42,26 @@ export default function RootLayout() {
     }
 
     return (
-        <ThemeProvider
-            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-                <Stack.Screen
-                    name='(tabs)'
-                    options={{
-                        headerShown: false,
-                        contentStyle: {
-                            backgroundColor: '#000000',
-                        },
-                    }}
-                />
-                <Stack.Screen name='+not-found' />
-                <Stack.Screen
-                    name='video'
-                    options={{ headerShown: false, presentation: 'modal' }}
-                />
-            </Stack>
-        </ThemeProvider>
+        <AppConfigProvider>
+            <ThemeProvider
+                value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                    <Stack.Screen
+                        name='(tabs)'
+                        options={{
+                            headerShown: false,
+                            contentStyle: {
+                                backgroundColor: '#000000',
+                            },
+                        }}
+                    />
+                    <Stack.Screen name='+not-found' />
+                    <Stack.Screen
+                        name='video'
+                        options={{ headerShown: false, presentation: 'modal' }}
+                    />
+                </Stack>
+            </ThemeProvider>
+        </AppConfigProvider>
     );
 }

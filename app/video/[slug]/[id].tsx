@@ -1,39 +1,47 @@
 import {
     View,
     StyleSheet,
-    ActivityIndicator,
     Text,
     Dimensions,
     TouchableOpacity,
     ImageBackground,
+    Pressable,
+    Image,
 } from 'react-native';
 import { VideoView, VideoSource, useVideoPlayer } from 'expo-video';
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useLocalSearchParams } from 'expo-router/build/hooks';
-import { Image } from 'react-native';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFetch } from '@/hooks/useFetch';
 import { useSendVideoProgressOnExit } from '@/hooks/useSendVideoProgressOnExit';
+import { useFavorite } from '@/hooks/useFavorite';
+import Loading from '@/components/Loading';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 export default function VideoScreen() {
     const videoViewRef = useRef<VideoView>(null);
     const { slug, id, urlImg, name, cap } = useLocalSearchParams();
-    const {
-        data: episodes,
-        error: errorEpisodes,
-        loading: loadingEpisodes,
-    } = useFetch<{ capLink: string; capThumbnail: string }[]>(
-        `http://172.16.0.7:3000/anime/episodes/${slug}`
-    );
-    const {
-        data: videoData,
-        error: errorVideo,
-        loading: loadingVideo,
-    } = useFetch<{
+    const { data: episodes, loading: loadingEpisodes } = useFetch<
+        { capLink: string; capThumbnail: string }[]
+    >(`/anime/episodes/${slug}`);
+    const { data: videoData, loading: loadingVideo } = useFetch<{
         result: { cap: string; foundUrl: string };
+        favorited: boolean;
         history: { watched: boolean; last_position_seconds: number };
-    }>(`http://172.16.0.7:3000/anime/video/${slug}/${cap}/${id}`);
+    }>(`/anime/video/${slug}/${cap}/${id}`);
+
+    const anime = useMemo(() => {
+        if (!videoData) return null;
+        return {
+            favorited: videoData.favorited,
+            id: parseInt(id as string),
+            name: name as string,
+            urlImg: urlImg as string,
+        };
+    }, [videoData, id, name, urlImg]);
 
     const videoSource: VideoSource = {
         uri: videoData?.result.foundUrl || '',
@@ -42,18 +50,17 @@ export default function VideoScreen() {
             : 'auto',
         useCaching: true,
     };
+
     const player = useVideoPlayer(videoSource, player => {
         player.addListener('sourceLoad', () => {
             player.currentTime = videoData?.history.last_position_seconds || 0;
             player.keepScreenOnWhilePlaying = true;
-            // Platform.isTV ? videoViewRef.current?.enterFullscreen() : null
             player.removeAllListeners('sourceLoad');
         });
     });
 
     useSendVideoProgressOnExit({
         player,
-        apiUrl: 'http://172.16.0.7:3000',
         body: {
             id,
             name,
@@ -62,6 +69,11 @@ export default function VideoScreen() {
             slug,
         },
         cap,
+    });
+
+    const { isFavorite, loadingFavorite, toggleFavorite } = useFavorite({
+        anime,
+        slug: slug as string | undefined,
     });
 
     const Element = ({ item, index }: { item: any; index: number }) => {
@@ -88,9 +100,12 @@ export default function VideoScreen() {
             </TouchableOpacity>
         );
     };
+
     return (
-        <SafeAreaView>
-            {!loadingVideo ? (
+        <SafeAreaView style={{ flex: 1 }}>
+            {loadingVideo ? (
+                <Loading size={60} color='blue' />
+            ) : (
                 <ImageBackground
                     resizeMode='stretch'
                     source={{ uri: urlImg as string }}
@@ -102,8 +117,6 @@ export default function VideoScreen() {
                             backgroundColor: 'rgba(0,0,0,0.6)',
                         }}
                     />
-
-                    {/* Todo tu contenido encima */}
                     <View style={styles.container}>
                         <VideoView
                             ref={videoViewRef}
@@ -123,23 +136,96 @@ export default function VideoScreen() {
                                 <Text style={styles.name}>{name}</Text>
                                 <Text style={styles.cap}>Cap {cap}</Text>
                             </View>
+                            <View style={styles.buttonContainer}>
+                                <Pressable
+                                    disabled={loadingFavorite}
+                                    onPress={toggleFavorite}
+                                    style={({ focused }) => [
+                                        styles.buttonPrimary,
+                                        focused && styles.buttonFocused,
+                                    ]}>
+                                    {({ focused }) => (
+                                        <>
+                                            <Text
+                                                style={{
+                                                    fontWeight: 'bold',
+                                                    color: focused
+                                                        ? 'black'
+                                                        : 'white',
+                                                    marginLeft: 8,
+                                                }}>
+                                                Favorite
+                                            </Text>
+                                            <Ionicons
+                                                style={{ marginLeft: 8 }}
+                                                name={
+                                                    isFavorite
+                                                        ? 'star'
+                                                        : 'star-outline'
+                                                }
+                                                size={24}
+                                                color={
+                                                    isFavorite
+                                                        ? 'yellow'
+                                                        : 'white'
+                                                }
+                                            />
+                                        </>
+                                    )}
+                                </Pressable>
+                                <Pressable
+                                    onPress={async () => {
+                                        await videoViewRef.current?.enterFullscreen();
+                                    }}
+                                    style={({ focused }) => [
+                                        styles.buttonPrimary,
+                                        focused && styles.buttonFocused,
+                                    ]}>
+                                    {({ focused }) => (
+                                        <>
+                                            <Text
+                                                style={{
+                                                    color: focused
+                                                        ? 'black'
+                                                        : 'white',
+                                                    marginLeft: 8,
+                                                }}>
+                                                Full Screen
+                                            </Text>
+                                            <MaterialIcons
+                                                style={{
+                                                    color: focused
+                                                        ? 'black'
+                                                        : 'white',
+                                                    marginLeft: 8,
+                                                    marginRight: 8,
+                                                }}
+                                                name='fullscreen'
+                                                size={24}
+                                                color={
+                                                    focused ? 'black' : 'white'
+                                                }
+                                            />
+                                        </>
+                                    )}
+                                </Pressable>
+                            </View>
                         </View>
-                        <FlashList
-                            style={styles.flashList}
-                            data={episodes}
-                            horizontal
-                            keyExtractor={(item, index) => index.toString()}
-                            numColumns={1}
-                            renderItem={Element}
-                        />
+
+                        {loadingEpisodes ? (
+                            <Loading size={60} color='blue' />
+                        ) : (
+                            <FlashList
+                                style={styles.flashList}
+                                data={episodes}
+                                horizontal
+                                keyExtractor={(item, index) => index.toString()}
+                                numColumns={1}
+                                renderItem={Element}
+                            />
+                        )}
                     </View>
                 </ImageBackground>
-            ) : (
-                <ActivityIndicator
-                    size='large'
-                    color='#00f'
-                    style={styles.loader}
-                />
             )}
         </SafeAreaView>
     );
@@ -155,9 +241,10 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 12,
     },
-    loader: {
-        flex: 1,
-        justifyContent: 'center',
+    buttonContainer: {
+        flexDirection: 'row',
+        marginTop: 4,
+        marginLeft: 20,
         alignItems: 'center',
     },
     video: {
@@ -179,6 +266,25 @@ const styles = StyleSheet.create({
     },
     textInfo: {
         flexShrink: 1,
+    },
+    buttonPrimary: {
+        flexDirection: 'row',
+        width: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#3C3A3A',
+        borderRadius: 4,
+        padding: 8,
+        marginTop: 8,
+        marginLeft: 8,
+        marginRight: 8,
+    },
+    buttonFocused: {
+        backgroundColor: '#fff',
+        padding: 8,
+        borderRadius: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     name: {
         color: '#fff',

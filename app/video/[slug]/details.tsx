@@ -1,9 +1,11 @@
+import { useFavorite } from '@/hooks/useFavorite';
+import ErrorMessage from '@/components/ErrorMessage';
+import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router/build/hooks';
-import { useState } from 'react';
 import {
     Image,
     ImageBackground,
@@ -13,15 +15,14 @@ import {
     View,
     Pressable,
     Platform,
-    ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { useState, useEffect } from 'react';
+import { useAppConfig } from '@/contexts/AppConfigContext';
 const THEME = {
     bg: '#0b0b0b',
     card: '#151515',
     cardAlt: '#1a1a1a',
-    primary: '#FF6F61',
+    primary: 'white',
     primaryAlt: '#ff8a7f',
     accent: '#1E90FF',
     accentBg: '#06283D',
@@ -34,13 +35,9 @@ const THEME = {
 
 export default function AnimeDetailsScreen() {
     const { slug } = useLocalSearchParams();
+    const { apiBaseUrl } = useAppConfig();
     const router = useRouter();
-
-    const [focusedGenreIndex, setFocusedGenreIndex] = useState<number | null>(
-        null
-    );
-
-    const { data, loading, error, refetch } = useFetch<{
+    const { data, loading, error, refetch, abort } = useFetch<{
         details: {
             id: number;
             name: string;
@@ -50,16 +47,15 @@ export default function AnimeDetailsScreen() {
             date: string;
             genres: string[];
             caps: number;
-            favorites: boolean;
-            last_episode: number;
+            favorited: boolean;
+            lastEpisode: number;
         };
         episodes: {
             cap: number;
             watched: boolean;
             last_position_seconds: number;
         }[];
-    }>(`http://172.16.0.7:3000/anime/details/${slug}`);
-
+    }>(`/anime/details/${slug}`);
     const goToEpisode = (num: number) =>
         router.push({
             pathname: `/video/[slug]/[id]`,
@@ -71,256 +67,345 @@ export default function AnimeDetailsScreen() {
                 urlImg: data?.details.urlImg,
             },
         });
-    const latestEpisode = data?.details.caps ?? 1;
+    const latestEpisode = data?.details.lastEpisode ?? data?.details.caps ?? 1;
+    const [episodes, setEpisodes] = useState(data?.episodes ?? []);
 
+    useEffect(() => {
+        if (data?.episodes) setEpisodes(data.episodes);
+    }, [data?.episodes]);
+
+    const toggleWatched = async (cap: number, current: boolean) => {
+        setEpisodes(prev =>
+            prev.map(ep => (ep.cap === cap ? { ...ep, watched: !current } : ep))
+        );
+        try {
+            await fetch(`${apiBaseUrl}/history/toggle/watched`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    anime_id: data!.details.id,
+                    cap,
+                    watched: !current,
+                }),
+            });
+        } catch (err) {
+            console.error(err);
+            setEpisodes(prev =>
+                prev.map(ep =>
+                    ep.cap === cap ? { ...ep, watched: current } : ep
+                )
+            );
+        }
+    };
+
+    const { isFavorite, loadingFavorite, toggleFavorite } = useFavorite({
+        anime: data?.details ?? null,
+        slug: slug as string | undefined,
+    });
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Loading State */}
-                {loading && (
-                    <View
-                        style={{
-                            flex: 1,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                        <ActivityIndicator size='large' color='#0000ff' />
-                    </View>
-                )}
+        <View style={styles.container}>
+            {!loading ? (
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}>
+                    {/* Error State */}
+                    {error && <ErrorMessage reloadMethod={refetch} />}
+                    {/* Content */}
+                    {!error && data && (
+                        <>
+                            {/* Hero with backdrop */}
+                            {data.details.urlImg ? (
+                                <ImageBackground
+                                    source={{ uri: data.details.urlImg }}
+                                    style={styles.hero}
+                                    imageStyle={styles.heroBgImage}
+                                    blurRadius={
+                                        Platform.OS === 'android' ? 8 : 18
+                                    }>
+                                    <View style={styles.heroOverlay} />
+                                    <View style={styles.heroContent}>
+                                        <Image
+                                            source={{
+                                                uri: data.details.urlImg,
+                                            }}
+                                            style={styles.poster}
+                                            resizeMode='cover'
+                                        />
+                                        <View style={styles.heroTextCol}>
+                                            <Text style={styles.title}>
+                                                {data.details.name}
+                                            </Text>
+                                            <Text
+                                                style={styles.description}
+                                                numberOfLines={
+                                                    Platform.isTV ? 8 : 6
+                                                }>
+                                                {data.details.description ||
+                                                    'Sin descripción disponible.'}
+                                            </Text>
 
-                {/* Error State */}
-                {!loading && error && (
-                    <View
-                        style={[styles.sectionCard, { alignItems: 'center' }]}>
-                        <Text style={styles.errorText}>
-                            {'An error occurred'}
-                        </Text>
-                        <Pressable
-                            style={({ focused }) => [
-                                styles.primaryBtn,
-                                focused && styles.primaryBtnFocused,
-                            ]}
-                            onPress={refetch}
-                            accessibilityRole='button'
-                            accessibilityLabel='Reintentar'>
-                            <Text style={styles.primaryBtnText}>
-                                Reintentar
-                            </Text>
-                        </Pressable>
-                    </View>
-                )}
-
-                {/* Content */}
-                {!loading && !error && data && (
-                    <>
-                        {/* Hero with backdrop */}
-                        {data.details.urlImg ? (
-                            <ImageBackground
-                                source={{ uri: data.details.urlImg }}
-                                style={styles.hero}
-                                imageStyle={styles.heroBgImage}
-                                blurRadius={Platform.OS === 'android' ? 8 : 18}>
-                                <View style={styles.heroOverlay} />
-                                <View style={styles.heroContent}>
-                                    <Image
-                                        source={{ uri: data.details.urlImg }}
-                                        style={styles.poster}
-                                        resizeMode='cover'
-                                    />
-                                    <View style={styles.heroTextCol}>
-                                        <Text style={styles.title}>
-                                            {data.details.name}
-                                        </Text>
-                                        <Text
-                                            style={styles.description}
-                                            numberOfLines={
-                                                Platform.isTV ? 8 : 6
-                                            }>
-                                            {data.details.description ||
-                                                'Sin descripción disponible.'}
-                                        </Text>
-
-                                        {/* Info chips */}
-                                        <View style={styles.infoRow}>
-                                            <View style={styles.chip}>
-                                                <Text style={styles.chipText}>
-                                                    Estado:{' '}
-                                                    {data.details.status}
-                                                </Text>
+                                            {/* Info chips */}
+                                            <View style={styles.infoRow}>
+                                                <View style={styles.chip}>
+                                                    <Text
+                                                        style={styles.chipText}>
+                                                        Estado:{' '}
+                                                        {data.details.status}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.chip}>
+                                                    <Text
+                                                        style={styles.chipText}>
+                                                        Estreno:{' '}
+                                                        {data.details.date}
+                                                    </Text>
+                                                </View>
                                             </View>
-                                            <View style={styles.chip}>
-                                                <Text style={styles.chipText}>
-                                                    Estreno: {data.details.date}
-                                                </Text>
+
+                                            {/* Actions */}
+                                            <View style={styles.actionsRow}>
+                                                <Pressable
+                                                    style={({ focused }) => [
+                                                        styles.primaryBtn,
+                                                        focused &&
+                                                            styles.primaryBtnFocused,
+                                                    ]}
+                                                    onPress={() =>
+                                                        goToEpisode(
+                                                            latestEpisode
+                                                        )
+                                                    }
+                                                    accessibilityRole='button'
+                                                    accessibilityLabel='Reproducir último episodio'>
+                                                    <Text
+                                                        style={
+                                                            styles.primaryBtnText
+                                                        }>
+                                                        ▶
+                                                        {data.details
+                                                            .lastEpisode
+                                                            ? `Continuar ${data.details.lastEpisode}`
+                                                            : 'Reproducir último'}
+                                                    </Text>
+                                                </Pressable>
+
+                                                <Pressable
+                                                    style={({ focused }) => [
+                                                        styles.secondaryBtn,
+                                                        focused &&
+                                                            styles.secondaryBtnFocused,
+                                                    ]}
+                                                    onPress={() =>
+                                                        goToEpisode(1)
+                                                    }
+                                                    accessibilityRole='button'
+                                                    accessibilityLabel='Comenzar desde el episodio'>
+                                                    <Text
+                                                        style={
+                                                            styles.secondaryBtnText
+                                                        }>
+                                                        Episodio 1
+                                                    </Text>
+                                                    <Ionicons
+                                                        name='play-sharp'
+                                                        size={24}
+                                                        color='white'
+                                                    />
+                                                </Pressable>
+                                                <Pressable
+                                                    style={({ focused }) => [
+                                                        styles.secondaryBtn,
+                                                        focused &&
+                                                            styles.secondaryBtnFocused,
+                                                    ]}
+                                                    disabled={loadingFavorite}
+                                                    onPress={toggleFavorite}
+                                                    accessibilityRole='button'
+                                                    accessibilityLabel='Agregar a favoritos'>
+                                                    <Text
+                                                        style={
+                                                            styles.secondaryBtnText
+                                                        }>
+                                                        Favoritos
+                                                    </Text>
+                                                    <Ionicons
+                                                        style={{
+                                                            marginLeft: 8,
+                                                        }}
+                                                        name={
+                                                            isFavorite
+                                                                ? 'star'
+                                                                : 'star-outline'
+                                                        }
+                                                        size={24}
+                                                        color={
+                                                            isFavorite
+                                                                ? 'yellow'
+                                                                : 'white'
+                                                        }
+                                                    />
+                                                </Pressable>
                                             </View>
                                         </View>
+                                    </View>
+                                </ImageBackground>
+                            ) : (
+                                <View style={styles.hero}>
+                                    <View style={styles.heroContent}>
+                                        <View
+                                            style={[
+                                                styles.poster,
+                                                { backgroundColor: THEME.card },
+                                            ]}
+                                        />
+                                        <View style={styles.heroTextCol}>
+                                            <Text style={styles.title}>
+                                                {data.details.name}
+                                            </Text>
+                                            <Text
+                                                style={styles.description}
+                                                numberOfLines={
+                                                    Platform.isTV ? 8 : 6
+                                                }>
+                                                {data.details.description ||
+                                                    'Sin descripción disponible.'}
+                                            </Text>
+                                            <View style={styles.infoRow}>
+                                                <View style={styles.chip}>
+                                                    <Text
+                                                        style={styles.chipText}>
+                                                        Estado:{' '}
+                                                        {data.details.status}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.chip}>
+                                                    <Text
+                                                        style={styles.chipText}>
+                                                        Estreno:{' '}
+                                                        {data.details.date}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
 
-                                        {/* Actions */}
-                                        <View style={styles.actionsRow}>
+                            {/* Genres */}
+                            <View
+                                style={{
+                                    ...styles.sectionCard,
+                                    marginBottom: 16,
+                                }}>
+                                <Text style={styles.sectionTitle}>Géneros</Text>
+                                <FlashList
+                                    data={data.details.genres}
+                                    horizontal
+                                    keyExtractor={(item, index) =>
+                                        `${item}-${index}`
+                                    }
+                                    renderItem={({ item, index }) => (
+                                        <Pressable
+                                            style={({ focused }) => [
+                                                styles.genre,
+                                                focused && styles.genreFocused,
+                                            ]}
+                                            accessibilityRole='button'
+                                            accessibilityLabel={`Género ${item}`}>
+                                            <Text style={styles.genreText}>
+                                                {item}
+                                            </Text>
+                                        </Pressable>
+                                    )}
+                                    contentContainerStyle={{ paddingRight: 8 }}
+                                    showsHorizontalScrollIndicator={false}
+                                />
+                            </View>
+
+                            {/* Episodes grid */}
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>
+                                    Episodios
+                                </Text>
+                                <FlashList
+                                    data={episodes}
+                                    numColumns={1}
+                                    showsHorizontalScrollIndicator={false}
+                                    keyExtractor={item => String(item.cap)}
+                                    renderItem={({ item }) => (
+                                        <View
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                            }}>
                                             <Pressable
                                                 style={({ focused }) => [
-                                                    styles.primaryBtn,
+                                                    styles.episode,
                                                     focused &&
-                                                        styles.primaryBtnFocused,
+                                                        styles.episodeFocused,
                                                 ]}
                                                 onPress={() =>
-                                                    goToEpisode(latestEpisode)
+                                                    goToEpisode(item.cap)
                                                 }
-                                                focusable
-                                                android_disableSound
                                                 accessibilityRole='button'
-                                                accessibilityLabel='Reproducir último episodio'>
+                                                accessibilityLabel={`Episodio ${item.cap}`}>
                                                 <Text
-                                                    style={
-                                                        styles.primaryBtnText
-                                                    }>
-                                                    ▶ Reproducir último
+                                                    style={styles.episodeText}>
+                                                    Episodio {item.cap}
                                                 </Text>
                                             </Pressable>
-
                                             <Pressable
-                                                style={({ focused }) => [
-                                                    styles.secondaryBtn,
-                                                    focused &&
-                                                        styles.secondaryBtnFocused,
-                                                ]}
-                                                onPress={() => goToEpisode(1)}
-                                                focusable
-                                                android_disableSound
+                                                onPress={() =>
+                                                    toggleWatched(
+                                                        item.cap,
+                                                        item.watched
+                                                    )
+                                                }
+                                                style={({ focused }) => ({
+                                                    backgroundColor: focused
+                                                        ? '#ccc'
+                                                        : 'transparent',
+                                                    padding: 10,
+                                                    marginLeft: 10,
+                                                    borderRadius: 40,
+                                                })}
                                                 accessibilityRole='button'
-                                                accessibilityLabel='Comenzar desde el episodio 1'>
-                                                <Text
-                                                    style={
-                                                        styles.secondaryBtnText
-                                                    }>
-                                                    ⏮ Episodio 1
-                                                </Text>
+                                                accessibilityLabel={
+                                                    item.watched
+                                                        ? 'Marcar como no visto'
+                                                        : 'Marcar como visto'
+                                                }>
+                                                <Ionicons
+                                                    name={
+                                                        item.watched
+                                                            ? 'checkmark-done-outline'
+                                                            : 'close-outline'
+                                                    }
+                                                    size={24}
+                                                    color={
+                                                        item.watched
+                                                            ? '#69FD2E'
+                                                            : 'red'
+                                                    }
+                                                />
                                             </Pressable>
                                         </View>
-                                    </View>
-                                </View>
-                            </ImageBackground>
-                        ) : (
-                            <View style={styles.hero}>
-                                <View style={styles.heroContent}>
-                                    <View
-                                        style={[
-                                            styles.poster,
-                                            { backgroundColor: THEME.card },
-                                        ]}
-                                    />
-                                    <View style={styles.heroTextCol}>
-                                        <Text style={styles.title}>
-                                            {data.details.name}
-                                        </Text>
-                                        <Text
-                                            style={styles.description}
-                                            numberOfLines={
-                                                Platform.isTV ? 8 : 6
-                                            }>
-                                            {data.details.description ||
-                                                'Sin descripción disponible.'}
-                                        </Text>
-                                        <View style={styles.infoRow}>
-                                            <View style={styles.chip}>
-                                                <Text style={styles.chipText}>
-                                                    Estado:{' '}
-                                                    {data.details.status}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.chip}>
-                                                <Text style={styles.chipText}>
-                                                    Estreno: {data.details.date}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </View>
+                                    )}
+                                    ItemSeparatorComponent={() => (
+                                        <View style={{ height: 10 }} />
+                                    )}
+                                    contentContainerStyle={styles.episodesGrid}
+                                    showsVerticalScrollIndicator={false}
+                                />
                             </View>
-                        )}
-
-                        {/* Genres */}
-                        <View
-                            style={{ ...styles.sectionCard, marginBottom: 16 }}>
-                            <Text style={styles.sectionTitle}>Géneros</Text>
-                            <FlashList
-                                data={data.details.genres}
-                                horizontal
-                                keyExtractor={(item, index) =>
-                                    `${item}-${index}`
-                                }
-                                renderItem={({ item, index }) => (
-                                    <Pressable
-                                        style={({ focused }) => [
-                                            styles.genre,
-                                            (focused ||
-                                                focusedGenreIndex === index) &&
-                                                styles.genreFocused,
-                                        ]}
-                                        onFocus={() =>
-                                            setFocusedGenreIndex(index)
-                                        }
-                                        onBlur={() =>
-                                            setFocusedGenreIndex(null)
-                                        }
-                                        accessibilityRole='button'
-                                        accessibilityLabel={`Género ${item}`}>
-                                        <Text style={styles.genreText}>
-                                            {item}
-                                        </Text>
-                                    </Pressable>
-                                )}
-                                contentContainerStyle={{ paddingRight: 8 }}
-                                showsHorizontalScrollIndicator={false}
-                            />
-                        </View>
-
-                        {/* Episodes grid */}
-                        <View style={styles.sectionCard}>
-                            <Text style={styles.sectionTitle}>Episodios</Text>
-                            <FlashList
-                                data={data.episodes}
-                                numColumns={1}
-                                keyExtractor={item => String(item.cap)}
-                                renderItem={({ item }) => (
-                                    <Pressable
-                                        style={({ focused }) => [
-                                            styles.episode,
-                                            focused && styles.episodeFocused,
-                                        ]}
-                                        focusable
-                                        onPress={() => goToEpisode(item.cap)}
-                                        accessibilityRole='button'
-                                        accessibilityLabel={`Episodio ${item.cap}`}>
-                                        <Text style={styles.episodeText}>
-                                            Episodio {item.cap}
-                                        </Text>
-                                        {item.watched ? (
-                                            <Ionicons
-                                                name='checkmark-done-outline'
-                                                size={24}
-                                                color='#69FD2E'
-                                            />
-                                        ) : (
-                                            <Ionicons
-                                                name='close-outline'
-                                                size={24}
-                                                color='red'
-                                            />
-                                        )}
-                                    </Pressable>
-                                )}
-                                ItemSeparatorComponent={() => (
-                                    <View style={{ height: 10 }} />
-                                )}
-                                contentContainerStyle={styles.episodesGrid}
-                                showsVerticalScrollIndicator={false}
-                            />
-                        </View>
-                    </>
-                )}
-            </ScrollView>
-        </SafeAreaView>
+                        </>
+                    )}
+                </ScrollView>
+            ) : (
+                <Loading size={36} color='blue' />
+            )}
+        </View>
     );
 }
 
@@ -329,7 +414,6 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         height: '100%',
-        backgroundColor: THEME.bg,
         paddingHorizontal: Platform.isTV ? 40 : 16,
         paddingTop: 16,
         paddingBottom: 16,
@@ -398,7 +482,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: Platform.isTV ? 36 : 26,
         fontWeight: '900',
-        color: THEME.primary,
+        color: 'orange',
         marginBottom: 8,
     },
     description: {
@@ -454,8 +538,12 @@ const styles = StyleSheet.create({
         fontSize: Platform.isTV ? 20 : 16,
     },
     secondaryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 8,
         paddingVertical: Platform.isTV ? 14 : 10,
-        paddingHorizontal: Platform.isTV ? 20 : 16,
+        paddingHorizontal: Platform.isTV ? 14 : 16,
         borderRadius: 12,
         backgroundColor: '#262626',
         borderWidth: 2,
@@ -491,8 +579,6 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
-
-    // Genres
     genre: {
         marginRight: 12,
         paddingVertical: Platform.isTV ? 12 : 8,
@@ -546,8 +632,6 @@ const styles = StyleSheet.create({
         fontSize: Platform.isTV ? 20 : 16,
         fontWeight: '800',
     },
-
-    // Loading skeletons
     heroBackdropSkeleton: {
         height: Platform.isTV ? 480 : 320,
         backgroundColor: '#202020',
