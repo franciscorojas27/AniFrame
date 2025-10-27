@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useAppConfig } from '@/contexts/AppConfigContext';
+import { AnimeDetails } from '@/shared/types.types';
 const THEME = {
     bg: '#0b0b0b',
     card: '#151515',
@@ -37,19 +38,8 @@ export default function AnimeDetailsScreen() {
     const { slug } = useLocalSearchParams();
     const { apiBaseUrl } = useAppConfig();
     const router = useRouter();
-    const { data, loading, error, refetch, abort } = useFetch<{
-        details: {
-            id: number;
-            name: string;
-            urlImg: string | null;
-            description: string | null;
-            status: string;
-            date: string;
-            genres: string[];
-            caps: number;
-            favorited: boolean;
-            lastEpisode: number;
-        };
+    const { data, loading, error, refetch } = useFetch<{
+        details: AnimeDetails;
         episodes: {
             cap: number;
             watched: boolean;
@@ -64,7 +54,7 @@ export default function AnimeDetailsScreen() {
                 id: data?.details.id || ' ',
                 cap: num,
                 name: data?.details.name,
-                urlImg: data?.details.urlImg,
+                imgUrl: data?.details.imgUrl,
             },
         });
     const latestEpisode = data?.details.lastEpisode ?? data?.details.caps ?? 1;
@@ -110,14 +100,16 @@ export default function AnimeDetailsScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}>
                     {/* Error State */}
-                    {error && <ErrorMessage reloadMethod={refetch} />}
+                    {error && (
+                        <ErrorMessage error={error} reloadMethod={refetch} />
+                    )}
                     {/* Content */}
                     {!error && data && (
                         <>
                             {/* Hero with backdrop */}
-                            {data.details.urlImg ? (
+                            {data.details.imgUrl ? (
                                 <ImageBackground
-                                    source={{ uri: data.details.urlImg }}
+                                    source={{ uri: data.details.imgUrl }}
                                     style={styles.hero}
                                     imageStyle={styles.heroBgImage}
                                     blurRadius={
@@ -127,7 +119,7 @@ export default function AnimeDetailsScreen() {
                                     <View style={styles.heroContent}>
                                         <Image
                                             source={{
-                                                uri: data.details.urlImg,
+                                                uri: data.details.imgUrl,
                                             }}
                                             style={styles.poster}
                                             resizeMode='cover'

@@ -2,6 +2,7 @@ import ErrorMessage from '@/components/ErrorMessage';
 import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { useTvRowFocus } from '@/hooks/useTvRowFocus';
+import { ScheduleData, ScheduleItem } from '@/shared/types.types';
 import { FlashList } from '@shopify/flash-list';
 import { Link } from 'expo-router';
 import React from 'react';
@@ -15,25 +16,6 @@ import {
 } from 'react-native';
 const ITEM_WIDTH = 160;
 const ITEM_HEIGHT = 200;
-
-type ScheduleItem = {
-    id: number;
-    name: string;
-    url: string;
-    imgUrl: string;
-    updateTimeAnime: string;
-};
-
-type ScheduleData = Record<
-    | 'lunes'
-    | 'martes'
-    | 'miercoles'
-    | 'jueves'
-    | 'viernes'
-    | 'sabado'
-    | 'domingo',
-    ScheduleItem[]
->;
 
 export default function ScheduleScreen() {
     const { data, loading, error, refetch } =
@@ -98,7 +80,7 @@ export default function ScheduleScreen() {
         );
     };
     if (loading) return <Loading size={64} color='blue' />;
-    if (error) return <ErrorMessage reloadMethod={refetch} />;
+    if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
 
     return (
         <TVTextScrollView

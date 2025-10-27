@@ -24,7 +24,7 @@ export default function FavoriteScreen() {
     );
 
     if (loading) return <Loading size={64} color='blue' />;
-    if (error) return <ErrorMessage reloadMethod={refetch} />;
+    if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
 
     const handleDelete = async (anime_id: number) => {
         try {

@@ -34,7 +34,7 @@ export default function ActivityHistoryScreen() {
                             id: item.anime_id || ' ',
                             cap: item.last_episode,
                             name: item.name,
-                            urlImg: item.img_url,
+                            imgUrl: item.img_url,
                         },
                     });
                 }}
@@ -59,7 +59,7 @@ export default function ActivityHistoryScreen() {
     );
 
     if (loading) return <Loading size={64} color='blue' />;
-    if (error) return <ErrorMessage reloadMethod={refetch} />;
+    if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
 
     return (
         <View style={styles.container}>

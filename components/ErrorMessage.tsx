@@ -16,13 +16,21 @@ const THEME = {
 };
 
 export default function ErrorMessage({
+    error,
     reloadMethod,
 }: {
+    error: Error;
     reloadMethod: () => void;
 }) {
+    const message = (() => {
+        const msg = error && error.message ? String(error.message) : '';
+        if (msg === '500' || msg.includes('500')) return 'Error del servidor';
+        if (msg === '404' || msg.includes('404')) return 'No encontrado';
+        return 'Ocurrió un error';
+    })();
     return (
         <View style={styles.sectionCard}>
-            <Text style={styles.errorText}>{'An error occurred'}</Text>
+            <Text style={styles.errorText}>{message}</Text>
             <Pressable
                 style={({ focused }) => [
                     styles.primaryBtn,

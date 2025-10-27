@@ -18,7 +18,7 @@ export function useFetch<T>(url: SlashStart, options?: RequestInit) {
                 signal: controller.signal,
                 ...options,
             });
-            if (!response.ok) throw new Error(`Error ${response.status}`);
+            if (!response.ok) throw new Error(`${response.status}`);
             const json = await response.json();
             setData(json);
             setError(null);

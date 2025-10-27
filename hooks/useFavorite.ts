@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 interface AnimeDetails {
     id: number;
     name: string;
-    urlImg: string | null;
+    imgUrl: string | null;
     favorited: boolean;
 }
 
@@ -35,7 +35,7 @@ export function useFavorite({ anime, slug }: UseFavoriteProps) {
                         id: anime.id,
                         name: anime.name,
                         slug,
-                        urlImg: anime.urlImg,
+                        imgUrl: anime.imgUrl,
                     }),
                 });
                 setIsFavorite(true);

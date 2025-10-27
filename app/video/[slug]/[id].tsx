@@ -23,7 +23,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function VideoScreen() {
     const videoViewRef = useRef<VideoView>(null);
-    const { slug, id, urlImg, name, cap } = useLocalSearchParams();
+    const { slug, id, imgUrl, name, cap } = useLocalSearchParams();
     const { data: episodes, loading: loadingEpisodes } = useFetch<
         { capLink: string; capThumbnail: string }[]
     >(`/anime/episodes/${slug}`);
@@ -39,9 +39,9 @@ export default function VideoScreen() {
             favorited: videoData.favorited,
             id: parseInt(id as string),
             name: name as string,
-            urlImg: urlImg as string,
+            imgUrl: imgUrl as string,
         };
-    }, [videoData, id, name, urlImg]);
+    }, [videoData, id, name, imgUrl]);
 
     const videoSource: VideoSource = {
         uri: videoData?.result.foundUrl || '',
@@ -64,7 +64,7 @@ export default function VideoScreen() {
         body: {
             id,
             name,
-            urlImg,
+            imgUrl,
             watched: true,
             slug,
         },
@@ -86,7 +86,7 @@ export default function VideoScreen() {
                         params: {
                             slug: slug as string,
                             id: id as string,
-                            urlImg: urlImg,
+                            imgUrl: imgUrl,
                             name: name,
                             cap: index + 1,
                         },
@@ -108,7 +108,7 @@ export default function VideoScreen() {
             ) : (
                 <ImageBackground
                     resizeMode='stretch'
-                    source={{ uri: urlImg as string }}
+                    source={{ uri: imgUrl as string }}
                     blurRadius={2}
                     style={{ width, height, flex: 1 }}>
                     <View
@@ -129,7 +129,7 @@ export default function VideoScreen() {
                             focusable={false}
                             style={styles.videoInfo}>
                             <Image
-                                source={{ uri: urlImg as string }}
+                                source={{ uri: imgUrl as string }}
                                 style={styles.thumbnail}
                             />
                             <View style={styles.textInfo}>
@@ -218,6 +218,7 @@ export default function VideoScreen() {
                             <FlashList
                                 style={styles.flashList}
                                 data={episodes}
+                                showsHorizontalScrollIndicator={false}
                                 horizontal
                                 keyExtractor={(item, index) => index.toString()}
                                 numColumns={1}

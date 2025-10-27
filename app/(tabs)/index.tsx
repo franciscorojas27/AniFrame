@@ -22,6 +22,7 @@ export default function HomeScreen() {
         error,
         refetch,
     } = useFetch<Anime[]>('/anime/home');
+
     const renderItem = ({ item }: { item: Anime }) => {
         return (
             <Link
@@ -30,14 +31,14 @@ export default function HomeScreen() {
                     params: {
                         slug: item.slug,
                         id: item.id,
-                        urlImg: item.urlImg,
+                        imgUrl: item.imgUrl,
                         name: item.name,
                         cap: item.cap,
                     },
                 }}
                 asChild>
                 <TouchableOpacity style={styles.itemContainer}>
-                    <Image source={{ uri: item.urlImg }} style={styles.image} />
+                    <Image source={{ uri: item.imgUrl }} style={styles.image} />
                     <View style={styles.textContainer}>
                         <Text style={styles.name} numberOfLines={2}>
                             {item.name}
@@ -49,7 +50,7 @@ export default function HomeScreen() {
         );
     };
     if (loading) return <Loading size={64} color='blue' />;
-    if (error) return <ErrorMessage reloadMethod={refetch} />;
+    if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
 
     return (
         <SafeAreaView style={styles.container}>
