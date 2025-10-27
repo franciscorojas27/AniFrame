@@ -2,24 +2,15 @@ import ErrorMessage from '@/components/ErrorMessage';
 import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { evt } from '@/hooks/useSendVideoProgressOnExit';
+import { HistoryItem } from '@/shared/types.types';
 import { FlashList } from '@shopify/flash-list';
 import { useEventListener } from 'expo';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { router } from 'expo-router';
 import { View, Image, Text, TouchableOpacity, StyleSheet } from 'react-native';
-
-type HistoryItem = {
-    anime_id: number;
-    name: string;
-    slug: string;
-    img_url: string;
-    last_episode: number;
-};
 
 export default function ActivityHistoryScreen() {
     const { data, loading, error, refetch } =
         useFetch<HistoryItem[]>('/history');
-
     useEventListener(evt, 'refreshHistory', () => {
         refetch();
     });
@@ -52,11 +43,6 @@ export default function ActivityHistoryScreen() {
             </TouchableOpacity>
         );
     }
-    useFocusEffect(
-        useCallback(() => {
-            refetch();
-        }, [])
-    );
 
     if (loading) return <Loading size={64} color='blue' />;
     if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
@@ -65,6 +51,7 @@ export default function ActivityHistoryScreen() {
         <View style={styles.container}>
             <FlashList
                 data={data}
+                extraData={data}
                 keyExtractor={item => item.anime_id.toString()}
                 initialScrollIndex={0}
                 persistentScrollbar={false}

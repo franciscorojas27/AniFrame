@@ -3,13 +3,13 @@ import Loading from '@/components/Loading';
 import { useFetch } from '@/hooks/useFetch';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { FlashList } from '@shopify/flash-list';
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, Alert, Pressable } from 'react-native';
 import { useAppConfig } from '@/contexts/AppConfigContext';
 import RenderItem from '@/components/RenderItem';
 import { FavoriteItem } from '@/shared/types.types';
 import RenderItemDelete from '@/components/RenderItemDelete';
+import { useRefreshPage } from '@/hooks/useRefreshPage';
 
 export default function FavoriteScreen() {
     const { data, loading, error, refetch } =
@@ -22,12 +22,7 @@ export default function FavoriteScreen() {
     }, [data]);
     const [modoEliminar, setModoEliminar] = useState(false);
     const { apiBaseUrl } = useAppConfig();
-    useFocusEffect(
-        useCallback(() => {
-            refetch();
-        }, [])
-    );
-
+    useRefreshPage({ refetch });
     if (loading) return <Loading size={64} color='blue' />;
     if (error) return <ErrorMessage error={error} reloadMethod={refetch} />;
 

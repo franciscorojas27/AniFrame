@@ -1,79 +1,191 @@
-# Expo Router TV demo 👋
+# AniFrame (Android TV + Web)
 
-![Apple TV screen shot](https://github.com/douglowder/examples/assets/6577821/a881466f-a7a0-4c66-b1fc-33235c466997)
-![Android TV screen shot](https://github.com/douglowder/examples/assets/6577821/815c8e01-8275-4cc1-bd57-b9c8bce1fb02)
+AniFrame es una app de streaming centrada en TV (Android TV / Apple TV) construida con Expo Router, React Native TV fork y navegación con DPAD. Incluye exploración con filtros avanzados, favoritos estilo Netflix, historial de actividad, horario semanal y reproducción con persistencia de progreso.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Capturas de pantalla
 
-This project uses
+| Home | Explorer | Detalle (top) | Detalle (middle) |
+|---|---|---|---|
+| ![Home](./screenshots/home_page.png) | ![Explorer](./screenshots/explorer_page.png) | ![Detalle Top](./screenshots/details_page_top.png) | ![Detalle Middle](./screenshots/details_page_middle.png) |
 
-- the [React Native TV fork](https://github.com/react-native-tvos/react-native-tvos), which supports both phone (Android and iOS) and TV (Android TV and Apple TV) targets
-- the [React Native TV config plugin](https://github.com/react-native-tvos/config-tv/tree/main/packages/config-tv) to allow Expo prebuild to modify the project's native files for TV builds
+| Video | Favoritos | Favoritos (borrar) | Historial |
+|---|---|---|---|
+| ![Video](./screenshots/video_page.png) | ![Favoritos](./screenshots/favorite.png) | ![Favoritos Delete](./screenshots/favorite_delete_mode.png) | ![Historial](./screenshots/activity_history_page.png) |
 
-## 🚀 How to use
+| Horario |
+|---|
+| ![Horario](./screenshots/horario_page.png) |
 
-- `cd` into the project
+## Características
 
-- For TV development:
+- Navegación TV-first con DPAD: foco estable, carouseles y grillas TV-friendly.
+- Búsqueda con filtros (query, género, categoría, estado) y URL compartible.
+- Favoritos estilo Netflix con tarjetas enfocables y feedback visual.
+- Historial de actividad y progreso de video persistente.
+- Horario semanal con navegación vertical/horizontal controlada.
+- Web de acompañamiento (Expo Web) para escritorio.
 
-```sh
+## Arquitectura
+
+- Expo + Expo Router (file-based routing)
+- React Native TV fork (tvos) + plugin `@react-native-tvos/config-tv`
+- FlashList (listas performantes)
+- Manejo de foco en TV (Android TV) con nextFocus y trampas de foco
+- Contexto `AppConfigContext` para `apiBaseUrl` del backend
+
+## Requisitos
+
+- Node.js 18+
+- Yarn (o npm/pnpm equivalente)
+- Bun (para el servidor)
+- pnpm (para compilar el SDK)
+
+## Levantar el cliente (TV/Web)
+
+```pwsh
+# Instalar dependencias
 yarn
-yarn prebuild:tv # Executes clean Expo prebuild with TV modifications
-yarn ios # Build and run for Apple TV
-yarn android # Build for Android TV
-yarn web # Run the project on web from localhost
-```
-- For mobile development:
 
-```sh
-yarn
-yarn prebuild # Executes Expo prebuild with no TV modifications
-yarn ios # Build and run for iOS
-yarn android # Build for Android mobile
-yarn web # Run the project on web from localhost
-```
+# TV: prebuild con modificaciones de TV (o define expo.extra.isTV)
+$env:EXPO_TV = "1"
+yarn prebuild:tv
 
-> **_NOTE:_**
-> Setting the environment variable `EXPO_TV=1` enables the `@react-native-tvos/config-tv` plugin to modify the project for TV.
-> This can also be done by setting the parameter `isTV` to true in the `app.json`.
+# Android TV (emulador/dispositivo)
+yarn android
 
-## Development
+# Apple TV (en macOS)
+yarn ios
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-This project includes a [demo](./components/EventHandlingDemo.tsx) showing how to use React Native TV APIs to highlight controls as the user navigates the screen with the remote control.
-
-## Deploy
-
-Deploy on all platforms with Expo Application Services (EAS).
-
-- Deploy the website: `npx eas-cli deploy` — [Learn more](https://docs.expo.dev/eas/hosting/get-started/)
-- Deploy on iOS and Android using: `npx eas-cli build` — [Learn more](https://expo.dev/eas)
-
-## TV specific file extensions
-
-This project includes an [example Metro configuration](./metro.config.js) that allows Metro to resolve application source files with TV-specific code, indicated by specific file extensions (`*.ios.tv.tsx`, `*.android.tv.tsx`, `*.tv.tsx`).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+# Web (localhost)
+yarn web
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Notas:
+- También puedes habilitar TV en `app.json` (`expo.extra.isTV: true`).
+- Usa la misma red LAN entre dispositivo y PC para desarrollo.
 
-## Learn more
+## Configurar el backend en la app
 
-To learn more about developing your project with Expo, look at the following resources:
+La app lee y persiste `apiBaseUrl` mediante `AppConfigContext` (AsyncStorage). Para apuntar al servidor Bun:
+- Abre la pestaña Settings en la app (icono ⚙️) y establece la URL base (p. ej. `http://192.168.1.50:3000`).
+- La app usará esa URL para todas las llamadas (`useFetch`, historial, búsqueda, etc.).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/learn): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Backend: Bun + SDK por Socket (socket.io)
 
-## Join the community
+Repositorios:
+- Servidor (Bun/Elysia + socket.io-client): https://github.com/franciscorojas27/AniFrame_Server
+- SDK (lanza un servidor socket.io y expone eventos): https://github.com/franciscorojas27/AniFrame_SDK
 
-Join our community of developers creating universal apps.
+Flujo de alto nivel:
+1) El SDK arranca un servidor socket.io en un puerto dinámico y escribe `%TEMP%/animeav1/config.json` con `{ port, pid }`.
+2) El servidor Bun (AniFrame_Server) se conecta como cliente (`socket.io-client`) a `SOCKET_IO_URL + port` y expone HTTP REST a la app móvil/web. Las llamadas HTTP internas usan `sendMessage(event, payload)` sobre el socket.
+3) La app consume únicamente HTTP del servidor Bun. No se conecta por socket desde el cliente.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 1) Construir/ejecutar el SDK (inicia el socket server)
+
+```pwsh
+# En AniFrame_SDK
+pnpm install
+pnpm build
+# Ejecutar el build para levantar el socket server (crea %TEMP%/animeav1/config.json)
+node .\dist\index.js
+```
+
+Eventos soportados por el socket del SDK (nombres aprox. según código):
+- "getHomePageListAnime"
+- "getSearchAnime"  (args: { query, page, genres: string[], status, category })
+- "getCatalogListAnime" (args: { page, genres, status, category })
+- "getEpisodeList" (args: { slug })
+- "getAnimeDetails" (args: { slug })
+- "getAnimeSchedule"
+- "getAnimeStreamingLinks" (args: { url: string[], delay?: number })
+- "getManifest"
+
+El servidor del SDK utiliza callbacks de socket: `socket.on(event, async (data, callback) => callback({ success, content|error }))`.
+
+### 2) Servidor Bun: conectarse al SDK por socket y exponer HTTP
+
+En AniFrame_Server (`src/main.ts`) se establece la conexión y se exporta `sendMessage`:
+
+```ts
+import { io } from 'socket.io-client'
+import os from 'node:os'
+import fs from 'node:fs'
+import path from 'node:path'
+
+const pathPluginPort = path.join(os.tmpdir(), 'animeav1', 'config.json')
+const config = JSON.parse(fs.readFileSync(pathPluginPort, 'utf-8'))
+const socket = io(process.env.SOCKET_IO_URL + config.port)
+
+export const sendMessage = async (command: string, message: object) => {
+	return new Promise((resolve) => {
+		socket.emit(command, message, (response: any) => resolve(response))
+	})
+}
+```
+
+Ejemplo de un handler HTTP en Elysia que usa `sendMessage`:
+
+```ts
+import { Elysia } from 'elysia'
+import { sendMessage } from './main'
+
+new Elysia({ prefix: '/api' })
+	.get('/home', async () => await sendMessage('getHomePageListAnime', {}))
+	.get('/search', async ({ query }) => {
+		const { q = '', page = '1', genre = '', category = '', status = '' } = query as Record<string, string>
+		const genres = genre ? genre.split(',').filter(Boolean) : []
+		return await sendMessage('getSearchAnime', {
+			args: { query: q, page: Number(page), genres, status, category }
+		})
+	})
+	.listen(3000)
+```
+
+### 3) Ejecutar el servidor Bun
+
+```pwsh
+# En AniFrame_Server
+bun install
+bun run dev
+```
+
+### 4) Probar desde la app
+- En Settings, apunta `apiBaseUrl` a `http://TU_IP:3000`
+- Abre Explorer y usa filtros/búsqueda; revisa la consola de AniFrame_Server y el proceso del SDK.
+
+## Builds y distribución
+
+- EAS (recomendado):
+```pwsh
+npx eas-cli build
+```
+- Local Android (gradle): revisa `android/app/build/outputs/...` para APK/AAB.
+- Puedes usar el build incluido en este repo si está disponible en Releases o carpeta de outputs.
+
+## TV/UX: buenas prácticas
+
+- Mantén foco visible y predecible; trapea los extremos con nextFocus.
+- Evita hooks dentro de renderItem; usa memo y extraData en listas.
+- Para filtros, dedupe y sanitiza arrays antes de enviar a backend.
+
+## Estructura del proyecto
+
+- `app/` rutas (Expo Router)
+- `components/` UI compartida (checkbox TV-safe, grillas)
+- `contexts/` `AppConfigContext` (`apiBaseUrl`)
+- `hooks/` fetch/progreso/TV focus
+- `layouts/` navegación/tab (web/tv)
+- `screenshots/` capturas usadas en este README
+
+## Problemas comunes
+
+- 404/500: verifica `apiBaseUrl` y conectividad LAN (usa IP, no localhost en TV).
+- CORS en Web: habilita cabeceras en Elysia.
+- TLS: usa http en LAN; para prod, proxy con certificado.
+- Socket no responde: asegúrate de haber arrancado el SDK (`node dist/index.js`) y que `%TEMP%/animeav1/config.json` existe con un `port` válido. El servidor Bun debe leer este archivo y concatenar con `SOCKET_IO_URL`.
+- Firewall/puerto: abre el puerto del socket y el del servidor Bun. En Windows, permite el proceso en el firewall.
+
+## Licencia
+
+Consulta las licencias en AniFrame_Server y AniFrame_SDK.

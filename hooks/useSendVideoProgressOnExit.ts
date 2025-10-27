@@ -3,7 +3,10 @@ import { useEvent, EventEmitter } from 'expo';
 import { useNavigation } from 'expo-router';
 import { VideoPlayer } from 'expo-video';
 import { useEffect } from 'react';
-export const evt = new EventEmitter<{ refreshHistory: () => void }>();
+export const evt = new EventEmitter<{
+    refreshHistory: () => void;
+    favorite: () => void;
+}>();
 
 export function useSendVideoProgressOnExit({
     player,
@@ -21,7 +24,6 @@ export function useSendVideoProgressOnExit({
 
         const unsubscribe = navigation.addListener('beforeRemove', async () => {
             try {
-                evt.emit('refreshHistory');
                 const currentTime =
                     typeof player.currentTime === 'number' &&
                     isFinite(player.currentTime)
@@ -35,6 +37,7 @@ export function useSendVideoProgressOnExit({
                         seconds: currentTime,
                     }),
                 });
+                evt.emit('refreshHistory');
             } catch (error) {
                 console.warn('❌ Error al enviar progreso:', error);
             }

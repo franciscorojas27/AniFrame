@@ -1,3 +1,4 @@
+
 import { useAppConfig } from '@/contexts/AppConfigContext';
 import { useState, useEffect, useCallback, useRef } from 'react';
 type SlashStart = `/${string}`;
@@ -26,7 +27,7 @@ export function useFetch<T>(url: SlashStart, options?: RequestInit) {
         } finally {
             setLoading(false);
         }
-    }, [url]);
+    }, [url, apiBaseUrl, options]);
     const abort = useCallback(() => {
         controllerRef.current?.abort();
     }, []);

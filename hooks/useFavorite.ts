@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { evt } from './useSendVideoProgressOnExit';
 
 interface AnimeDetails {
     id: number;

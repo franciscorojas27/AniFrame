@@ -10,7 +10,13 @@ export type ScheduleItem = Omit<Anime, 'cap'> & {
     url: string;
     updateTimeAnime: string;
 };
-
+export type HistoryItem = {
+    anime_id: number;
+    name: string;
+    slug: string;
+    img_url: string;
+    last_episode: number;
+};
 export type ScheduleData = Record<
     | 'lunes'
     | 'martes'

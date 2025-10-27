@@ -10,7 +10,7 @@
     "reset-project": "./scripts/reset-project.js",
     "lint": "expo lint",
     "prebuild": "expo prebuild --clean",
-    "prebuild:tv": "EXPO_TV=1 expo prebuild --clean",
+    "prebuild:tv": "cross-env EXPO_TV=1 expo prebuild --clean",
     "deploy": "npx expo export -p web && npx eas-cli@latest deploy"
   },
   "dependencies": {
