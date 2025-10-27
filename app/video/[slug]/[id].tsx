@@ -133,7 +133,31 @@ export default function VideoScreen() {
                                 style={styles.thumbnail}
                             />
                             <View style={styles.textInfo}>
-                                <Text style={styles.name}>{name}</Text>
+                                <Pressable
+                                    onPress={() => {
+                                        router.replace({
+                                            pathname: '/video/[slug]/details',
+                                            params: {
+                                                slug: slug as string,
+                                            },
+                                        });
+                                    }}
+                                    style={({ focused }) => [
+                                        {
+                                            borderRadius: 8,
+                                            borderColor: focused
+                                                ? '#00FFFF'
+                                                : '#fff',
+                                            borderWidth: 2,
+                                            paddingVertical: 4,
+                                            paddingHorizontal: 8,
+                                            marginBottom: 6,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        },
+                                    ]}>
+                                    <Text style={[styles.name]}>{name}</Text>
+                                </Pressable>
                                 <Text style={styles.cap}>Cap {cap}</Text>
                             </View>
                             <View style={styles.buttonContainer}>

@@ -8,7 +8,6 @@ export function useFetch<T>(url: SlashStart, options?: RequestInit) {
     const [loading, setLoading] = useState<boolean>(false);
     const controllerRef = useRef<AbortController | null>(null);
     const { apiBaseUrl } = useAppConfig();
-
     const fetchData = useCallback(async () => {
         const controller = new AbortController();
         controllerRef.current = controller;

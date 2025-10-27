@@ -22,6 +22,8 @@ import { AnimeDetails } from '@/shared/types.types';
 const THEME = {
     bg: '#0b0b0b',
     card: '#151515',
+    black: '#000',
+    cardFocused: '#1a1a1a',
     cardAlt: '#1a1a1a',
     primary: 'white',
     primaryAlt: '#ff8a7f',
@@ -305,9 +307,18 @@ export default function AnimeDetailsScreen() {
                                             ]}
                                             accessibilityRole='button'
                                             accessibilityLabel={`Género ${item}`}>
-                                            <Text style={styles.genreText}>
-                                                {item}
-                                            </Text>
+                                            {({ focused }) => {
+                                                return (
+                                                    <Text
+                                                        style={[
+                                                            styles.genreText,
+                                                            focused &&
+                                                                styles.genreTextFocused,
+                                                        ]}>
+                                                        {item}
+                                                    </Text>
+                                                );
+                                            }}
                                         </Pressable>
                                     )}
                                     contentContainerStyle={{ paddingRight: 8 }}
@@ -435,12 +446,6 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         transform: [{ scale: 1.02 }],
     },
-    backText: {
-        color: THEME.white,
-        fontWeight: '700',
-        fontSize: Platform.isTV ? 20 : 14,
-    },
-
     hero: {
         borderRadius: 18,
         overflow: 'hidden',
@@ -591,6 +596,10 @@ const styles = StyleSheet.create({
     },
     genreText: {
         color: THEME.white,
+        fontWeight: '700',
+    },
+    genreTextFocused: {
+        color: THEME.black,
         fontWeight: '700',
     },
     episodesGrid: {

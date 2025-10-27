@@ -4,7 +4,7 @@ import { useFetch } from '@/hooks/useFetch';
 import { useNumColumns } from '@/hooks/useNumColumns';
 import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, Alert, Pressable } from 'react-native';
 import { useAppConfig } from '@/contexts/AppConfigContext';
 import RenderItem from '@/components/RenderItem';
@@ -14,7 +14,12 @@ import RenderItemDelete from '@/components/RenderItemDelete';
 export default function FavoriteScreen() {
     const { data, loading, error, refetch } =
         useFetch<FavoriteItem[]>(`/favorite`);
-
+    const [favorite, setFavorite] = useState<FavoriteItem[]>([]);
+    useEffect(() => {
+        if (data) {
+            setFavorite(data);
+        }
+    }, [data]);
     const [modoEliminar, setModoEliminar] = useState(false);
     const { apiBaseUrl } = useAppConfig();
     useFocusEffect(
@@ -32,7 +37,9 @@ export default function FavoriteScreen() {
                 method: 'DELETE',
             });
             if (res.ok) {
-                refetch();
+                setFavorite(prev => {
+                    return prev.filter(item => item.id !== anime_id);
+                });
             } else {
                 Alert.alert('Error', 'No se pudo eliminar el favorito.');
             }
@@ -81,7 +88,7 @@ export default function FavoriteScreen() {
             <FlashList
                 showsVerticalScrollIndicator={false}
                 keyExtractor={item => item.id.toString()}
-                data={data}
+                data={favorite}
                 numColumns={useNumColumns()}
                 renderItem={Element}
             />
